@@ -21,7 +21,27 @@
 //SOFTWARE.
 //
 
-module ();
+// Port = ingress+egress bus
+
+
+module router#(
+	//NUM_PORTS = {2, 3, 4}, NI port is always on and not counted here.
+	parameter NUM_PORTS=4,
+	parameter PORT_WIDTH=128
+	)
+	(
+	input clk,
+	input arst,
+	input srst,
+	// Ingress ports
+	input                  ing_val [0:NUM_PORTS],
+	input [PORT_WIDTH-1:0] ing_dat [0:NUM_PORTS],
+	output reg             ing_rdy,
+	// Egress ports
+	input                  egr_val [0:NUM_PORTS],
+	input [PORT_WIDTH-1:0] egr_dat [0:NUM_PORTS],
+	output reg             egr_rdy
+	);
 
 
 endmodule
