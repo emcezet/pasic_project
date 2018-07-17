@@ -40,10 +40,48 @@ module fifo#(
 	output reg mty,
 	output reg [DATA_WIDTH-1:0] q
 	);
+localparam LOG2_DEPTH=$clog2(DEPTH);
+reg [LOG2_DEPTH-1:0] pHead;
+reg [LOG2_DEPTH-1:0] pTail;
+
+// create memory from registers
+reg [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
 
 always @ ( posedge clk or posedge arst )
 begin
+	if ( arst )
+		begin
+			pHead <= '0;
+			pTail <= '0;
+			ff_ram <= '0; //SV feature
+		end
+	else
+		begin
+			if ( wr )
+				begin
+					ff_ram[pHead] <= d;
+					pHead <= pHead + 1'b1;
+				end
+			else
+				begin
+					ff_ram[pHead] <= ff_ram[pHead];
+					pHead <= pHead;
+				end
+			if ( rd ) 
+				begin
+					q <= ff_ram[pTail]; //SHOW_AHEAD
+					pTail <= pTail + 1'b1;
+				end
+			else
+				begin
+					ff_ram[pTail] <= ff_ram[pTail];
+					pTail <= pTail;
+				end
+			if( pHead == pTail )
+			begin
 
+			end
+		end
 end
 
 endmodule

@@ -21,7 +21,19 @@
 //SOFTWARE.
 //
 
-module ();
+module top#(
+	parameter SIZE_X=4,
+	parameter SIZE_Y=4,
+	parameter TOPOLOGY="MESH",
+	parameter ROUTER="ALGORITHMIC_SOUTH_EAST"
+	)
+	(
+	input clk,
+	input arst,
+	input srst,
+	//I/O
+	
+	);
 
 
 endmodule
