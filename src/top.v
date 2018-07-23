@@ -21,13 +21,24 @@
 //SOFTWARE.
 //
 
+`define ROUTER_BUS_WIDTH 148
+`define NIBBLE reg[3:0]
+
+typedef struct packed{
+	`NIBBLE src_x,
+	`NIBBLE src_y,
+	`NIBBLE dst_x,
+	`NIBBLE dst_y,
+	reg [7:0] type,
+	reg [(`ROUTER_BUS_WIDTH - 4*4 - 8 )-1:0] payload
+} message_t;
+
 module top#(
 	parameter SIZE_X=4,
 	parameter SIZE_Y=4,
 	parameter TOPOLOGY="MESH",
 	parameter ROUTER="ALGORITHMIC_SOUTH_EAST"
-	)
-	(
+	)(
 	input clk,
 	input arst,
 	input srst,
@@ -35,5 +46,5 @@ module top#(
 	
 	);
 
-
 endmodule
+
