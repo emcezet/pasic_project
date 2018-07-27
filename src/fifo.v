@@ -24,8 +24,8 @@
 module fifo#(
 	parameter DATA_WIDTH=128,
 	parameter DEPTH=8,
-	parameter ALMOST_MTY_TH=1,
-	parameter ALMOST_FULL_TH=1
+    parameter ALMOST_MTY=1,
+    parameter ALMOST_FULL=1
         )
         (
 	//
@@ -42,12 +42,15 @@ module fifo#(
 	output reg mty,
 	output reg [DATA_WIDTH-1:0] q
 	);
+
 localparam LOG2_DEPTH=$clog2(DEPTH);
+
 reg [LOG2_DEPTH-1:0] pHead;
 reg [LOG2_DEPTH-1:0] pTail;
 
 // create memory from registers
 reg [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
+
 
 always @ ( posedge clk or posedge arst )
 begin
@@ -56,29 +59,48 @@ begin
 			pHead <= '0;
 			pTail <= '0;
 			ff_ram <= '0; //SV feature
+            almost_full <= '0;
+            full <= '0;
+            almost_mty <= '1;
+            mty <= '1;
 		end
 	else
 		begin
-			if ( wr )
-				begin
-					ff_ram[pHead] <= d;
-					pHead <= pHead + 1'b1;
-				end
-			else
-				begin
-					ff_ram[pHead] <= ff_ram[pHead];
-					pHead <= pHead;
-				end
-			if ( rd ) 
-				begin
-					q <= ff_ram[pTail]; //SHOW_AHEAD
-					pTail <= pTail + 1'b1;
-				end
-			else
-				begin
-					ff_ram[pTail] <= ff_ram[pTail];
-					pTail <= pTail;
-				end
+            if ( full )
+                begin
+
+                end
+            else
+                begin
+                    if ( wr )
+                        begin
+                            ff_ram[pHead] <= d;
+                            pHead <= pHead + 1'b1;
+                        end
+                    else
+                        begin
+                            ff_ram[pHead] <= ff_ram[pHead];
+                            pHead <= pHead;
+                        end
+                end
+            if ( mty )
+                begin
+                    if ( rd )
+                        begin
+                            q <= ff_ram[pTail]; //SHOW_AHEAD
+                            pTail <= pTail + 1'b1;
+                        end
+                    else
+                        begin
+                            ff_ram[pTail] <= ff_ram[pTail];
+                            pTail <= pTail;
+                        end
+                end
+            else
+                begin
+
+                end
+
 			if( pHead == pTail )
 			begin
 
