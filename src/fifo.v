@@ -26,8 +26,8 @@ module fifo#(
 	parameter DEPTH=8,
     parameter ALMOST_MTY=1,
     parameter ALMOST_FULL=1
-        )
-        (
+    )
+    (
 	//
 	input clk,
 	input arst,
@@ -47,64 +47,69 @@ localparam LOG2_DEPTH=$clog2(DEPTH);
 
 reg [LOG2_DEPTH-1:0] pHead;
 reg [LOG2_DEPTH-1:0] pTail;
-
 // create memory from registers
 reg [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
 
+// Signals associated with R:
+//  - mty
+//  - almost_mty
+//  - q
 
 always @ ( posedge clk or posedge arst )
 begin
 	if ( arst )
 		begin
-			pHead <= '0;
-			pTail <= '0;
-			ff_ram <= '0; //SV feature
+			pHead       <= '0;
+			pTail       <= '0;
+			ff_ram      <= '0;
             almost_full <= '0;
-            full <= '0;
-            almost_mty <= '1;
-            mty <= '1;
+            full        <= '0;
+            almost_mty  <= '0;
+            mty         <= '1;
 		end
 	else
 		begin
-            if ( full )
+            if ( full ) // Do not accept new writes!
                 begin
-
+                    ff_ram[pHead] <= ff_ram[pHead];
+                    pHead         <= pHead;
                 end
             else
                 begin
                     if ( wr )
                         begin
                             ff_ram[pHead] <= d;
-                            pHead <= pHead + 1'b1;
+                            pHead         <= pHead + 1'b1;
                         end
                     else
                         begin
                             ff_ram[pHead] <= ff_ram[pHead];
-                            pHead <= pHead;
+                            pHead         <= pHead;
                         end
                 end
-            if ( mty )
+            if ( mty ) // Do not accept new reads!
                 begin
-                    if ( rd )
-                        begin
-                            q <= ff_ram[pTail]; //SHOW_AHEAD
-                            pTail <= pTail + 1'b1;
-                        end
-                    else
-                        begin
-                            ff_ram[pTail] <= ff_ram[pTail];
-                            pTail <= pTail;
-                        end
+                    ff_ram[pTail]   <= ff_ram[pTail];
+                    pTail           <= pTail;
                 end
             else
                 begin
-
+                    if ( rd )
+                        begin
+                            q       <= ff_ram[pTail];
+                            pTail   <= pTail + 1'b1;
+                        end
+                    else
+                        begin
+                            ff_ram[pTail]   <= ff_ram[pTail];
+                            pTail           <= pTail;
+                        end
                 end
-
-			if( pHead == pTail )
-			begin
-
-			end
+            // Generate full, mty, almost_*
+            almost_full <= ( pHead - pTail ) == ALMOST_MTY; //parameter cast to int!
+            mty <= ( pHead - pTail ) == 1'b1;
+            almost_full <=  ( pTail - pHead ) == ALMOST_FULL;
+            full <= ( pTail - pHead ) == 1'b1;
 		end
 end
 
