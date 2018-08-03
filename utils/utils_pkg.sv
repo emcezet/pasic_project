@@ -1,4 +1,3 @@
-
 //MIT License
 //
 //Copyright (c) 2018 Michał Czyż
@@ -22,26 +21,36 @@
 //SOFTWARE.
 //
 
+package utils_pkg
 
-// Unit test for FIFO
+function debug_print(
+    input string msg
+    );
+    `ifdef V_DEBUG
+        $display("[%t] [DEBUG:%m] %s",$time,msg);
+    `endif
+endfunction
 
-module ut_fifo();
+function info_print(
+    input string msg
+    );
+    `ifdef V_INFO
+        $display("[%t] [INFO :%m] %s",$time,msg);
+    `endif
+endfunction
 
-// Instantiate FIFO
-//
-//
-// Generate clock
-// Generate reset
-//
+function warn_print(
+    input string msg
+    );
+    `ifdef V_WARN
+        $display("[%t] [WARN :%m] %s",$time,msg);
+    `endif
+endfunction
 
-// Test scheme:
-// -> Reset, check for 'x'
-// -> Write until full
-// -> Attempt overflow write
-// -> Reset
-// -> Write until full
-// -> Read until empty
-// -> Reset
-// -> Randomized R/W operation
 
-endmodule
+function clog2();
+
+endfunction
+
+endpackage
+
