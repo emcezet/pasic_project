@@ -50,7 +50,7 @@ task enable();
     end
 endtask
 
-task disable();
+task unenable(); // diable is a keyword :)
     begin
         en = 1'b0;
     end

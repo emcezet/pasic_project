@@ -1,4 +1,3 @@
-
 //MIT License
 //
 //Copyright (c) 2018 Michał Czyż
@@ -24,6 +23,7 @@
 
 
 // Unit test for FIFO
+import utils_pkg::*;
 
 module ut_fifo();
 // FIFO parameters
@@ -95,6 +95,23 @@ fifo #(
 // -> Read until empty
 // -> Reset
 // -> Randomized R/W operation
+
+// Test:
+
+initial
+        begin
+            // Reset
+            debug_print("Entering test.");
+            urst.rst_deassert();
+            debug_print("Reset deaserted");
+            $display("[rst=%b]",rst);
+            uclk.enable();
+            #(50)
+            urst.rst_cycle(79);
+            debug_print("Reset cycle finished");
+            $display("[rst=%b]",rst);
+        end
+
 task write(
     input [DATA_W-1:0] data
     );

@@ -22,26 +22,26 @@
 //
 
 module fifo#(
-	parameter DATA_WIDTH=128,
-	parameter DEPTH=8,
+    parameter DATA_WIDTH=128,
+    parameter DEPTH=8,
     parameter ALMOST_MTY=1,
     parameter ALMOST_FULL=1
     )
     (
 	//
-	input clk,
-	input arst,
-	input srst,
-	//
-	input wr,
-	input rd,
-	input [DATA_WIDTH-1:0] data,
-	output reg almost_full,
-	output reg full,
-	output reg almost_mty,
-	output reg mty,
-	output reg [DATA_WIDTH-1:0] q
-	);
+    input clk,
+    input arst,
+    input srst,
+    //
+    input wr,
+    input rd,
+    input [DATA_WIDTH-1:0] data,
+    output reg almost_full,
+    output reg full,
+    output reg almost_mty,
+    output reg mty,
+    output reg [DATA_WIDTH-1:0] q
+    );
 
 localparam LOG2_DEPTH=$clog2(DEPTH);
 
@@ -57,18 +57,18 @@ reg [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
 
 always @ ( posedge clk or posedge arst )
 begin
-	if ( arst )
-		begin
-			pHead       <= '0;
-			pTail       <= '0;
-			ff_ram      <= '0;
+    if ( arst )
+	    begin
+		    pHead       <= '0;
+		    pTail       <= '0;
+		    ff_ram      <= {DEPTH{'0}};
             almost_full <= '0;
             full        <= '0;
             almost_mty  <= '0;
             mty         <= '1;
-		end
-	else
-		begin
+	    end
+    else
+	    begin
             if ( full ) // Do not accept new writes!
                 begin
                     ff_ram[pHead] <= ff_ram[pHead];
@@ -78,7 +78,7 @@ begin
                 begin
                     if ( wr )
                         begin
-                            ff_ram[pHead] <= d;
+                            ff_ram[pHead] <= data;
                             pHead         <= pHead + 1'b1;
                         end
                     else

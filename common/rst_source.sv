@@ -31,34 +31,34 @@ module rst_source#(
     output reg rst
     );
 
-task assert();
+task rst_assert();
     begin
         rst = ( ACTIVE_HIGH == "YES" ) ? 1'b1 : 1'b0;
     end
 endtask
 
-task deassert();
+task rst_deassert();
     begin
         rst = ( ACTIVE_HIGH == "YES" ) ? 1'b0 : 1'b1;
     end
 endtask
 
-task cycle(
+task rst_cycle(
     input integer len
     );
     begin
     if ( SYNCH == "YES" )
         begin
             @( posedge clk )
-                assert();
+                rst_assert();
             #( len )
-                deassert();
+                rst_deassert();
         end
     else
         begin
-                assert();
+                rst_assert();
             #( len )
-                deassert();
+                rst_deassert();
         end
     end
 endtask

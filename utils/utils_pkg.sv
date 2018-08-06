@@ -21,7 +21,10 @@
 //SOFTWARE.
 //
 
-package utils_pkg
+`define V_DEBUG
+`define V_INFO
+`define V_WARN
+package utils_pkg;
 
 function debug_print(
     input string msg
@@ -45,11 +48,6 @@ function warn_print(
     `ifdef V_WARN
         $display("[%t] [WARN :%m] %s",$time,msg);
     `endif
-endfunction
-
-
-function clog2();
-
 endfunction
 
 endpackage
