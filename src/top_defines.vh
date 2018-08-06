@@ -21,18 +21,8 @@
 //SOFTWARE.
 //
 
-module top#(
-	parameter SIZE_X=4,
-	parameter SIZE_Y=4,
-	parameter TOPOLOGY=`NOC_TOPOLOGY,
-	parameter ROUTER="ALGORITHMIC_SOUTH_EAST"
-	)(
-	input clk,
-	input arst,
-	input srst,
-	// I/O
-	
-	);
-
-endmodule
+`define TOPOLOGY "MESH"
+`define MESH_SIZE_X 4
+`define MESH_SIZE_Y 4
+`define ROUTER_ALGORITHM "ALGORITHMIC_SOUTH_EAST" 
 

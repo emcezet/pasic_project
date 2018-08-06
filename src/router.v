@@ -28,6 +28,7 @@ module router#(
 	//NUM_PORTS = {2, 3, 4}, NI port is always on and not counted here.
 	parameter NUM_PORTS=5,
 	parameter PORT_WIDTH=128
+	parameter FIFO_DEPTH=8
 	)
 	(
 	input clk,
@@ -47,45 +48,109 @@ genvar fifo_index;
 for ( fifo_index = 0 ; fifo_index < NUM_INDEX ; fifo_index++ )
 begin : gen_input_fifo
 	fifo #(
-	.DATA_WIDTH(128),
-	.DEPTH(8),
+	.DATA_WIDTH(PORT_WIDTH),
+	.DEPTH(FIFO_DEPTH),
 	.ALMOST_MTY_TH(1),
 	.ALMOST_FULL_TH(1)
 	) ufifoinput (
 	.clk		(clk),
 	.arst		(arst),
 	.srst		(srst),
-	.wr		(),
-	.rd		(),
+	.wr		(ing_val[fifo_index]),
+	.rd		(switch_rd_in[fifo_index]),
 	.data		(ing_dat[fifo_index]),
 	.almost_full	(),
-	.full		(),
+	.full		(~ing_rdy[fifo_index]),
 	.almost_mty	(),
-	.mty		(),
-	.q		()
+	.mty		(switch_mty_in[fifo_index]),
+	.q		(switch_dat_in[fifo_index])
 	);
 end
 
 for ( fifo_index = 0 ; fifo_index < NUM_INDEX ; fifo_index++ )
 begin : gen_output_fifo
 	fifo #(
-	.DATA_WIDTH(128),
-	.DEPTH(8),
+	.DATA_WIDTH(PORT_WIDTH),
+	.DEPTH(FIFO_DEPTH),
 	.ALMOST_MTY_TH(1),
 	.ALMOST_FULL_TH(1)
 	) ufifooutput (
 	.clk		(clk),
 	.arst		(arst),
 	.srst		(srst),
-	.wr		(),
+	.wr		(switch_wr_out[fifo_index]),
 	.rd		(),
-	.data		(egr_dat[fifo_index]),
+	.data		(switch_dat_out[fifo_index]),
 	.almost_full	(),
-	.full		(),
+	.full		(switch_full_out[fifo_index]),
 	.almost_mty	(),
 	.mty		(),
-	.q		()
+	.q		(egr_dat[fifo_index])
 	);
 end
 
+
+// Crossbar switch
+reg switch_rd;
+reg switch_mty;
+reg switch_dat;
+
+
+reg sel_fifo_in;
+reg sel_fifo_out;
+
+`define SEL_N 0
+`define SEL_W 1
+`define SEL_E 2
+`define SEL_S 3
+
+always @ ( * )
+begin
+	case ( sel_fifo_in ):
+		`SEL_N:
+			msg = switch_dat[0];
+		`SEL_W:
+					
+end
+
+
+
+// FSM
+// Operation:
+// 	-> Read messages from input fifo's in a round-robin fashion.
+// 	-> If output FIFO is full, lock. Would be better if the message was
+// 	returned to the input queue.
+// 	-> If input FIFO is empty, skip.
+// 	-> OPTIONAL : If corrupted message, drop.
+// 	->  
+// Inputs:
+// 	-> mty's and full's
+// 
+
+`define S_RESET 0
+`define S_RD_MSG 1
+`define S_WR_MSG 2
+`define 
+reg [3:0] router_state;
+
+// Process for next state.
+always @ ( posedge clk or posedge arst )
+begin
+	case (router_state)
+		`S_RESET:
+			begin
+				router_state <= 
+			end
+		`S_RD_MSG:
+			begin
+			end
+		`S_WR_MSG
+			begin
+			end
+		default:
+			begin
+			end	
+end
+
 endmodule
+

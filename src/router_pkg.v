@@ -21,18 +21,19 @@
 //SOFTWARE.
 //
 
-module top#(
-	parameter SIZE_X=4,
-	parameter SIZE_Y=4,
-	parameter TOPOLOGY=`NOC_TOPOLOGY,
-	parameter ROUTER="ALGORITHMIC_SOUTH_EAST"
-	)(
-	input clk,
-	input arst,
-	input srst,
-	// I/O
-	
-	);
+`define ROUTER_BUS_WIDTH $bits(message_t)
+`define NIBBLE reg[3:0]
 
-endmodule
+typedef struct packed{
+	`NIBBLE src_x,
+	`NIBBLE src_y,
+	`NIBBLE dst_x,
+	`NIBBLE dst_y,
+	reg [7:0] type,
+	reg [(`ROUTER_BUS_WIDTH - 4*4 - 8 )-1:0] payload
+} message_t;
 
+
+package router
+
+endpackage
