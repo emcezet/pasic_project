@@ -20,47 +20,30 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 //
-// Reset source generator
-// Synch only guarantees synch on assertion, not on removal.
 
-module rst_source#(
-    parameter ACTIVE_HIGH="YES",
-    parameter SYNCH="YES"
-    )(
-    input clk,
-    output reg rst
+import router_pkg::*
+
+interface clk_rst();
+    logic CLK;
+    logic ARST;
+    logic ARSTn;
+    logic SRST;
+    logic SRSTn;
+
+modport source(
+    output CLK;
+    output ARST;
+    output ARSTn;
+    output SRST;
+    output SRSTn;
     );
 
-task rst_assert();
-    begin
-        rst = ( ACTIVE_HIGH == "YES" ) ? 1'b1 : 1'b0;
-    end
-endtask
-
-task rst_deassert();
-    begin
-        rst = ( ACTIVE_HIGH == "YES" ) ? 1'b0 : 1'b1;
-    end
-endtask
-
-task rst_cycle(
-    input integer len
+modport sink(
+    input CLK;
+    input ARST;
+    input ARSTn;
+    input SRST;
+    input SRSTn;
     );
-    begin
-    if ( SYNCH == "YES" )
-        begin
-            @( posedge clk )
-                rst_assert();
-            #( len )
-                rst_deassert();
-        end
-    else
-        begin
-                rst_assert();
-            #( len )
-                rst_deassert();
-        end
-    end
-endtask
 
-endmodule
+endinterface

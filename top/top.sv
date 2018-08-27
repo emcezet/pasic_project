@@ -21,14 +21,16 @@
 //SOFTWARE.
 //
 
-// Define TOP-LEVEL parameters
+module top#(
+	parameter SIZE_X=4,
+	parameter SIZE_Y=4,
+	parameter TOPOLOGY=`NOC_TOPOLOGY,
+	parameter ROUTER="ALGORITHMIC_SOUTH_EAST"
+	)(
+	
+	// I/O
+	
+	);
 
-// Router
-`define ROUTER_BUS_W 128 //Bits
-`define AXI_ST_SYMBOL_W 8
-`define AXI_ST_SYMBOL_NUM 16
-`define AXI_ST_DATA_W AXI_ST_SYMBOL_W*AXI_ST_SYMBOL_NUM
-`define AXI_ST_TID_W 8
-`define AXI_ST_TDEST_W 4
-`define AXI_ST_TUSER_W 8
+endmodule
 

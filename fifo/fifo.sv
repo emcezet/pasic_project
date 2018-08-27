@@ -28,57 +28,41 @@ module fifo#(
     parameter ALMOST_FULL=1
     )
     (
-	//
-    input clk,
-    input arst,
-    input srst,
-    //
-    input wr,
-    input rd,
-    input [DATA_WIDTH-1:0] data,
-    output reg almost_full,
-    output reg full,
-    output reg almost_mty,
-    output reg mty,
-    output reg [DATA_WIDTH-1:0] q
+    clk_rst_if.sink clk_if,
+    fifo_if.in fifo_in,
+    fifo_if.out fifo_out
     );
 
 localparam LOG2_DEPTH=$clog2(DEPTH);
 
-reg [LOG2_DEPTH-1:0] pHead;
-reg [LOG2_DEPTH-1:0] pTail;
-// create memory from registers
-reg [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
+logic [LOG2_DEPTH-1:0] pHead;
+logic [LOG2_DEPTH-1:0] pTail;
+logic [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
 
-// Signals associated with R:
-//  - mty
-//  - almost_mty
-//  - q
-
-always @ ( posedge clk or posedge arst )
+always @ ( posedge clk_if.CLK or posedge clk_if.ARST )
 begin
     if ( arst )
-	    begin
-		    pHead       <= '0;
-		    pTail       <= '0;
-		    ff_ram      <= {DEPTH{'0}};
-            almost_full <= '0;
-            full        <= '0;
-            almost_mty  <= '0;
-            mty         <= '1;
-	    end
+        begin
+            pHead                <= '0;
+            pTail                <= '0;
+            ff_ram               <= {DEPTH{'0}};
+            fifo_out.almost_full <= '0;
+            fifo_out.full        <= '0;
+            fifo_out.almost_mty  <= '0;
+            fifo_out.mty         <= '1;
+        end
     else
-	    begin
-            if ( full ) // Do not accept new writes!
+        begin
+            if ( fifo_out.full ) // Do not accept new writes!
                 begin
                     ff_ram[pHead] <= ff_ram[pHead];
                     pHead         <= pHead;
                 end
             else
                 begin
-                    if ( wr )
+                    if ( fifo_in.wr )
                         begin
-                            ff_ram[pHead] <= data;
+                            ff_ram[pHead] <= fifo_in.data;
                             pHead         <= pHead + 1'b1;
                         end
                     else
@@ -87,7 +71,7 @@ begin
                             pHead         <= pHead;
                         end
                 end
-            if ( mty ) // Do not accept new reads!
+            if ( fifo_out.mty ) // Do not accept new reads!
                 begin
                     ff_ram[pTail]   <= ff_ram[pTail];
                     pTail           <= pTail;
@@ -96,8 +80,8 @@ begin
                 begin
                     if ( rd )
                         begin
-                            q       <= ff_ram[pTail];
-                            pTail   <= pTail + 1'b1;
+                            fifo_out.q  <= ff_ram[pTail];
+                            pTail       <= pTail + 1'b1;
                         end
                     else
                         begin
@@ -105,12 +89,13 @@ begin
                             pTail           <= pTail;
                         end
                 end
-            // Generate full, mty, almost_*
-            almost_full <= ( pHead - pTail ) == ALMOST_MTY; //parameter cast to int!
-            mty <= ( pHead - pTail ) == 1'b1;
-            almost_full <=  ( pTail - pHead ) == ALMOST_FULL;
-            full <= ( pTail - pHead ) == 1'b1;
-		end
+            // Generate mty, almost_mty
+            fifo_out.almost_mty <= ( pHead - pTail ) == ALMOST_MTY; //parameter cast to int!
+            fifo_out.mty        <= ( pHead - pTail ) == 1'b1;
+            // Generate full, almost_full
+            fifo_out.almost_full <= ( pTail - pHead ) == ALMOST_FULL;
+            fifo_out.full        <= ( pTail - pHead ) == 1'b1;
+        end
 end
 
 endmodule

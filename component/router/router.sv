@@ -21,72 +21,45 @@
 //SOFTWARE.
 //
 
-// Port = ingress+egress bus
-
-
 module router#(
-	//NUM_PORTS = {2, 3, 4}, NI port is always on and not counted here.
-	parameter NUM_PORTS=5,
-	parameter PORT_WIDTH=128
-	parameter FIFO_DEPTH=8
-	)
-	(
-	input clk,
-	input arst,
-	input srst,
-	// Ingress ports
-	input                  ing_val [0:NUM_PORTS-1],
-	input [PORT_WIDTH-1:0] ing_dat [0:NUM_PORTS-1],
-	output reg             ing_rdy [0:NUM_PORTS-1],
-	// Egress ports
-	input                  egr_val [0:NUM_PORTS-1],
-	input [PORT_WIDTH-1:0] egr_dat [0:NUM_PORTS-1],
-	output reg             egr_rdy [0:NUM_PORTS-1]
-	);
+    //NUM_PORTS = {2, 3, 4}, NI port is always on and not counted here.
+    parameter NUM_PORTS=`ROUTER_NUM_PORTS,
+    parameter PORT_WIDTH=`ROUTER_BUS_W,
+    parameter FIFO_DEPTH=`ROUTER_FIFO_DEPTH
+    )
+    (
+    clk_rst_if.sink clk_if,
+    axi_st.master[`ROUTER_NUM_PORTS] axi_egress, 
+    axi_st.slave[`ROUTER_NUM_PORTS] axi_ingress, 
+    );
 
 genvar fifo_index;
 for ( fifo_index = 0 ; fifo_index < NUM_INDEX ; fifo_index++ )
 begin : gen_input_fifo
-	fifo #(
-	.DATA_WIDTH(PORT_WIDTH),
-	.DEPTH(FIFO_DEPTH),
-	.ALMOST_MTY_TH(1),
-	.ALMOST_FULL_TH(1)
-	) ufifoinput (
-	.clk		(clk),
-	.arst		(arst),
-	.srst		(srst),
-	.wr		(ing_val[fifo_index]),
-	.rd		(switch_rd_in[fifo_index]),
-	.data		(ing_dat[fifo_index]),
-	.almost_full	(),
-	.full		(~ing_rdy[fifo_index]),
-	.almost_mty	(),
-	.mty		(switch_mty_in[fifo_index]),
-	.q		(switch_dat_in[fifo_index])
-	);
+    fifo #(
+    .DATA_WIDTH(PORT_WIDTH),
+    .DEPTH(FIFO_DEPTH),
+    .ALMOST_MTY_TH(1),
+    .ALMOST_FULL_TH(1)
+    ) ufifoinput (
+    .clk_if(clk_if.slave),
+    .fifo_in(),
+    .fifo_out()
+    );
 end
 
 for ( fifo_index = 0 ; fifo_index < NUM_INDEX ; fifo_index++ )
 begin : gen_output_fifo
-	fifo #(
-	.DATA_WIDTH(PORT_WIDTH),
-	.DEPTH(FIFO_DEPTH),
-	.ALMOST_MTY_TH(1),
-	.ALMOST_FULL_TH(1)
-	) ufifooutput (
-	.clk		(clk),
-	.arst		(arst),
-	.srst		(srst),
-	.wr		(switch_wr_out[fifo_index]),
-	.rd		(),
-	.data		(switch_dat_out[fifo_index]),
-	.almost_full	(),
-	.full		(switch_full_out[fifo_index]),
-	.almost_mty	(),
-	.mty		(),
-	.q		(egr_dat[fifo_index])
-	);
+    fifo #(
+    .DATA_WIDTH(PORT_WIDTH),
+    .DEPTH(FIFO_DEPTH),
+    .ALMOST_MTY_TH(1),
+    .ALMOST_FULL_TH(1)
+    ) ufifooutput (
+    .clk_if(clk_if.slave),
+    .fifo_in(),
+    .fifo_out()
+    );
 end
 
 
@@ -106,11 +79,10 @@ reg sel_fifo_out;
 
 always @ ( * )
 begin
-	case ( sel_fifo_in ):
-		`SEL_N:
-			msg = switch_dat[0];
-		`SEL_W:
-					
+    case ( sel_fifo_in ):
+        `SEL_N:
+            msg = switch_dat[0];
+        `SEL_W:
 end
 
 
