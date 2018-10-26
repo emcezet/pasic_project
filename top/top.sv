@@ -22,15 +22,20 @@
 //
 
 module top#(
-	parameter SIZE_X=4,
-	parameter SIZE_Y=4,
-	parameter TOPOLOGY=`NOC_TOPOLOGY,
-	parameter ROUTER="ALGORITHMIC_SOUTH_EAST"
-	)(
-	
-	// I/O
-	
-	);
+    parameter SIZE_X=4,
+    parameter SIZE_Y=4,
+    parameter TOPOLOGY=`NOC_TOPOLOGY,
+    parameter ROUTER=`ALGORITHMIC_SOUTH_EAST
+    )(
+
+    // I/O
+    genvar router_index;
+    generate
+        for ( router_index = 0 ; router_index < SIZE_X*SIZE_Y ; router_index++ )
+        begin : gen_mesh
+            router #() u_router ();
+    );
+    endgenerate
 
 endmodule
 

@@ -36,28 +36,28 @@ typedef struct packed{
 } rout_msg_t;
 
 typedef struct packed{
-    logic                   TVALID;
-    logic                   TREADY;
-    logic [DATA_W-1:0]      TDATA;
-    logic [SYMBOL_NUM-1:0]  TSTRB;
-    logic [SYMBOL_NUM-1:0]  TKEEP;
-    logic                   TLAST;
-    logic [TID_W-1:0]       TID;
-    logic [TDEST_W-1:0]     TDEST;
-    logic [TUSER_W-1:0]     TUSER;
+    logic                   tvalid;
+    logic                   tready;
+    logic [DATA_W-1:0]      tdata;
+    logic [SYMBOL_NUM-1:0]  tstrb;
+    logic [SYMBOL_NUM-1:0]  tkeep;
+    logic                   tlast;
+    logic [TID_W-1:0]       tid;
+    logic [TDEST_W-1:0]     tdest;
+    logic [TUSER_W-1:0]     tuser;
 } axi_st;
 
 // Parameters may lead to errors, should be rewritten.
 typedef struct packed{
-    logic                   TVALID;
-    logic                   TREADY;
-    rout_msg_t              TDATA;
-    logic [SYMBOL_NUM-1:0]  TSTRB;
-    logic [SYMBOL_NUM-1:0]  TKEEP;
-    logic                   TLAST;
-    logic [TID_W-1:0]       TID;
-    logic [TDEST_W-1:0]     TDEST;
-    logic [TUSER_W-1:0]     TUSER;
+    logic                   tvalid;
+    logic                   tready;
+    rout_msg_t              tdata;
+    logic [SYMBOL_NUM-1:0]  tstrb;
+    logic [SYMBOL_NUM-1:0]  tkeep;
+    logic                   tlast;
+    logic [TID_W-1:0]       tid;
+    logic [TDEST_W-1:0]     tdest;
+    logic [TUSER_W-1:0]     tuser;
 } rout_axi_st;
 
 endpackage

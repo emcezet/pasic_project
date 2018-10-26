@@ -29,8 +29,8 @@
 `define TOPOLOGY "MESH"
 `define MESH_SIZE_X 4
 `define MESH_SIZE_Y 4
-// Router 
-`define ROUTER_ALGORITHM "ALGORITHMIC_SOUTH_EAST" 
+// Router
+`define ROUTER_ALGORITHM "ALGORITHMIC_SOUTH_EAST"
 `define ROUTER_BUS_W 128
 `define ROUTER_NUM_PORTS 5
 `define ROUTER_FIFO_DEPTH 8
@@ -41,3 +41,4 @@
 `define AXI_ST_TID_W 8
 `define AXI_ST_TDEST_W 4
 `define AXI_ST_TUSER_W 8
+

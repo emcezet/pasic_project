@@ -21,73 +21,85 @@
 //SOFTWARE.
 //
 
-module router#(
-    //NUM_PORTS = {2, 3, 4}, NI port is always on and not counted here.
-    parameter NUM_PORTS=`ROUTER_NUM_PORTS,
-    parameter PORT_WIDTH=`ROUTER_BUS_W,
-    parameter FIFO_DEPTH=`ROUTER_FIFO_DEPTH
+module router #(
+    //Allowed NUM_PORTS = {2, 3, 4}, NI port is always on and not counted here.
+    parameter NUM_PORTS = `ROUTER_NUM_PORTS,
+    parameter PORT_WIDTH = `ROUTER_BUS_W,
+    parameter FIFO_DEPTH = `ROUTER_FIFO_DEPTH
     )
     (
     clk_rst_if.sink clk_if,
-    axi_st.master[`ROUTER_NUM_PORTS] axi_egress, 
-    axi_st.slave[`ROUTER_NUM_PORTS] axi_ingress, 
+    // To/from other routers
+    axi_st.master axi_egress[0:NUM_PORTS],
+    axi_st.slave axi_ingress[0:NUM_PORTS],
+    // To/from Network Inteface (Processing Element)
+    axi_lite.master ni_out,
+    axi_lite.slave ni_in
     );
+
+// Generate fifos and crossbar switch.
 
 genvar fifo_index;
-for ( fifo_index = 0 ; fifo_index < NUM_INDEX ; fifo_index++ )
-begin : gen_input_fifo
-    fifo #(
-    .DATA_WIDTH(PORT_WIDTH),
-    .DEPTH(FIFO_DEPTH),
-    .ALMOST_MTY_TH(1),
-    .ALMOST_FULL_TH(1)
-    ) ufifoinput (
-    .clk_if(clk_if.slave),
-    .fifo_in(),
-    .fifo_out()
-    );
-end
+generate
+for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
+    begin : gen_input_fifo
+        fifo #(
+        .DATA_WIDTH     (PORT_WIDTH),
+        .DEPTH          (FIFO_DEPTH),
+        .ALMOST_MTY_TH  (1),
+        .ALMOST_FULL_TH (1)
+        ) u_fifo_in (
+        .clk_if     (clk_if.slave),
+        .fifo_in    (),
+        .fifo_out   ()
+        );
+    end
 
-for ( fifo_index = 0 ; fifo_index < NUM_INDEX ; fifo_index++ )
-begin : gen_output_fifo
-    fifo #(
-    .DATA_WIDTH(PORT_WIDTH),
-    .DEPTH(FIFO_DEPTH),
-    .ALMOST_MTY_TH(1),
-    .ALMOST_FULL_TH(1)
-    ) ufifooutput (
-    .clk_if(clk_if.slave),
-    .fifo_in(),
-    .fifo_out()
-    );
-end
+for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
+    begin : gen_output_fifo
+        fifo #(
+        .DATA_WIDTH     (PORT_WIDTH),
+        .DEPTH          (FIFO_DEPTH),
+        .ALMOST_MTY_TH  (1),
+        .ALMOST_FULL_TH (1)
+        ) u_fifo_out (
+        .clk_if         (clk_if.slave),
+        .fifo_in        (),
+        .fifo_out       ()
+        );
+    end
+endgenerate
+// Fifo to axi_st conversion is needed.
+// Basic scheme:
 
+always_comb
+    begin : translate_axi_to_fifo
+        if ( fifo_full )
+            begin
+                axi_ready = 0;
+            end
+        else
+            begin
+                axi_ready = 1;
+            end
+        if ( axi_ready & axi_data_valid )
+                write_to_fifo;
+    end
 
-// Crossbar switch
-reg switch_rd;
-reg switch_mty;
-reg switch_dat;
+always_comb
+    begin : translate_fifo_to_axi
+        if ( axi_ready & fifo_not_empty )
+            begin
+                read_from_fifo;
+                axi_valid;
+            end
+        if ( fifo_empty )
+            begin
+                axi_notvalid
+            end
+    end
 
-
-reg sel_fifo_in;
-reg sel_fifo_out;
-
-`define SEL_N 0
-`define SEL_W 1
-`define SEL_E 2
-`define SEL_S 3
-
-always @ ( * )
-begin
-    case ( sel_fifo_in ):
-        `SEL_N:
-            msg = switch_dat[0];
-        `SEL_W:
-end
-
-
-
-// FSM
+// Router FSM
 // Operation:
 // 	-> Read messages from input fifo's in a round-robin fashion.
 // 	-> If output FIFO is full, lock. Would be better if the message was
@@ -99,30 +111,8 @@ end
 // 	-> mty's and full's
 // 
 
-`define S_RESET 0
-`define S_RD_MSG 1
-`define S_WR_MSG 2
-`define 
-reg [3:0] router_state;
+// NI
 
-// Process for next state.
-always @ ( posedge clk or posedge arst )
-begin
-	case (router_state)
-		`S_RESET:
-			begin
-				router_state <= 
-			end
-		`S_RD_MSG:
-			begin
-			end
-		`S_WR_MSG
-			begin
-			end
-		default:
-			begin
-			end	
-end
 
 endmodule
 
