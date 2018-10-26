@@ -23,45 +23,27 @@
 
 
 // Unit test for FIFO
-import utils_pkg::*;
+module ut_fifo#()(
+    );
 
-module ut_fifo();
+//timeunit 1ns;
+//timeprecision 10ps;
+
 // FIFO parameters
 localparam DATA_W=128;
 localparam DEPTH=2**4;
 localparam MTY_TH=1;
 localparam FULL_TH=1;
 
-// // Signals declarations
-wire clk;
-wire rst;
-
-// FIFO
-reg wr;
-reg rd;
-reg data;
-wire almost_full;
-wire full;
-wire almost_mty;
-wire mty;
-wire q;
-
-// // Instances
+// Signals declarations
+clk_rst_if clk_test_if();
+fifo_if fifo_test_if(clk_test_if.sink);
 
 // Generate clock
-clk_source #(
+clk_rst_source #(
     .PERIOD(10)
-    ) uclk (
-    .clk(clk)
-    );
-
-// Generate reset
-rst_source #(
-    .ACTIVE_HIGH("YES"),
-    .SYNCH("NO")
-    ) urst (
-    .clk(clk),
-    .rst(rst)
+    ) u_clk_rst_source (
+    .clk_if     (clk_test_if.source)
     );
 
 // Instantiate FIFO
@@ -72,20 +54,18 @@ fifo #(
     .ALMOST_FULL    (FULL_TH)
     ) ufifo
     (
-    .clk            (clk),
-    .arst           (rst),
-    .srst           (/*nc*/),
-    .wr             (),
-    .rd             (),
-    .data           (),
-    .almost_full    (),
-    .full           (),
-    .almost_mty     (),
-    .mty            (),
-    .q              ()
+    .clk_if     (clk_test_if.sink),
+    .fifo_in    (fifo_test_if.in),
+    .fifo_out   (fifo_test_if.out)
     );
 
-
+fifo_tester #(
+    ) u_fifo_tester
+    (
+    .clk_if         (clk_test_if.sink),
+    .fifo_driver    (fifo_test_if.driver),
+    .fifo_reader    (fifo_test_if.reader)
+    );
 // Test scheme:
 // -> Reset, check for 'x'
 // -> Write until full
@@ -100,38 +80,43 @@ fifo #(
 
 initial
         begin
-            // Reset
-            debug_print("Entering test.");
-            urst.rst_deassert();
-            debug_print("Reset deaserted");
-            $display("[rst=%b]",rst);
-            uclk.enable();
-            #(50)
-            urst.rst_cycle(79);
-            debug_print("Reset cycle finished");
-            $display("[rst=%b]",rst);
+            $display("Entering test.");
+            ut_fifo.seq_reset(15,45);
+            #(20)
+            ut_fifo.seq_single_data_io();
+            $display("Finished test.");
         end
 
-task write(
-    input [DATA_W-1:0] data
+task seq_reset(
+    input integer time_delay,
+    input integer time_len
     );
-    begin
-        @( posedge clk )
-            wr = 1'b1;
-        @( posedge clk )
-            wr = 1'b0;
-    end
+    u_fifo_tester.idle();
+    #(time_delay)
+        u_clk_rst_source.arst_assert();
+    #(time_len)
+        u_clk_rst_source.arst_deassert();
 endtask
 
-task read(
-    output [DATA_W-1:0] data
+task seq_setup(
+    input integer number_data
     );
-    begin
-        @( posedge clk )
-            rd = 1'b1;
-        @( posedge clk )
-            rd = 1'b0;
-    end
+    u_fifo_tester.generate_new_data(number_data);
 endtask
+
+task seq_single_data_io();
+   ut_fifo.seq_setup(1);
+   fork
+       begin
+            u_fifo_tester.send_data();
+       end
+       begin
+            u_fifo_tester.read_data();
+       end
+   join
+   u_fifo_tester.dump();
+endtask
+
 
 endmodule
+

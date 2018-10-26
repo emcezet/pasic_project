@@ -27,46 +27,49 @@
 // Signal names as in spec docs/AXI.
 // Note that clock and reset signals should be provided with clk_rst interface.
 
-interface axi_st #(
-    parameter SYMBOL_W      = `AXI_ST_SYMBOL_W,
-    parameter SYMBOL_NUM    = `AXI_ST_SYMBOL_NUM,
-    parameter DATA_W        = `AXI_ST_DATA_W,
-    parameter TID_W         = `AXI_ST_TID_W, // Recommended max.
-    parameter TDEST_W       = `AXI_ST_TDEST_W, // Recommended max.
-    parameter TUSER_W       = `AXI_ST_TUSER_W // Smaller than recommended.
-    )();
-    logic                   TVALID;
-    logic                   TREADY;
-    logic [DATA_W-1:0]      TDATA;
-    logic [SYMBOL_NUM-1:0]  TSTRB;
-    logic [SYMBOL_NUM-1:0]  TKEEP;
-    logic                   TLAST;
-    logic [TID_W-1:0]       TID;
-    logic [TDEST_W-1:0]     TDEST;
-    logic [TUSER_W-1:0]     TUSER;
+interface axi_st_if #(
+    parameter SYMBOL_W      = 8, //`AXI_ST_SYMBOL_W,
+    parameter SYMBOL_NUM    = 8, //`AXI_ST_SYMBOL_NUM,
+    parameter DATA_W        = 8, //`AXI_ST_DATA_W,
+    parameter TID_W         = 8, //`AXI_ST_TID_W, // Recommended max.
+    parameter TDEST_W       = 8, //`AXI_ST_TDEST_W, // Recommended max.
+    parameter TUSER_W       = 8 //`AXI_ST_TUSER_W // Smaller than recommended.
+    )(
+    clk_rst_if.sink clk_rst_if
+    );
+    logic                   tvalid;
+    logic                   tready;
+    logic [DATA_W-1:0]      tdata;
+    logic [SYMBOL_NUM-1:0]  tstrb;
+    logic [SYMBOL_NUM-1:0]  tkeep;
+    logic                   tlast;
+    logic [TID_W-1:0]       tid;
+    logic [TDEST_W-1:0]     tdest;
+    logic [TUSER_W-1:0]     tuser;
 
 modport master(
-    output TVALID;
-    input  TREADY;
-    output TDATA;
-    output TSTRB;
-    output TKEEP;
-    output TLAST;
-    output TID;
-    output TDEST;
-    output TUSER;
+    output tvalid,
+    input  tready,
+    output tdata,
+    output tstrb,
+    output tkeep,
+    output tlast,
+    output tid,
+    output tdest,
+    output tuser
     );
 
 modport slave(
-    input  TVALID;
-    output TREADY;
-    input  TDATA;
-    input  TSTRB;
-    input  TKEEP;
-    input  TLAST;
-    input  TID;
-    input  TDEST;
-    input  TUSER;
+    input  tvalid,
+    output tready,
+    input  tdata,
+    input  tstrb,
+    input  tkeep,
+    input  tlast,
+    input  tid,
+    input  tdest,
+    input  tuser
     );
 
 endinterface
+

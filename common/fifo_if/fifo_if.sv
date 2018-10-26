@@ -21,9 +21,11 @@
 //SOFTWARE.
 //
 
-interface fifo #(
-    parameter DATA_WIDTH = `AXI_ST_DATA_W
-    )();
+interface fifo_if #(
+    parameter DATA_WIDTH = 8 //`AXI_ST_DATA_W
+    )(
+    clk_rst_if.sink clk_rst_if
+    );
     logic wr;
     logic rd;
     logic [DATA_WIDTH-1:0] data;
@@ -34,17 +36,32 @@ interface fifo #(
     logic [DATA_WIDTH-1:0] q;
 
 modport in(
-    input wr;
-    input [DATA_WIDTH-1:0] data;
+    input wr,
+    input data,
+    input rd
     );
 
 modport out(
-    output almost_full;
-    output full;
-    output rd;
-    output almost_mty;
-    output mty;
-    output [DATA_WIDTH-1:0] q;
+    output almost_full,
+    output full,
+    output almost_mty,
+    output mty,
+    output q
     );
 
+modport driver(
+    output wr,
+    output data,
+    output rd
+);
+
+modport reader(
+    input almost_full,
+    input full,
+    input almost_mty,
+    input mty,
+    input q
+);
+
 endinterface
+

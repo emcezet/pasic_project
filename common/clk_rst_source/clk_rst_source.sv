@@ -23,71 +23,69 @@
 
 // Non-synth module
 
-import router_pkg::*;
-
 module clk_rst_source#(
     parameter PERIOD=10
     )(
-    clk_rst.source clk_if
+    clk_rst_if.source clk_if
     );
 
 // Generate clock
 
 initial
     begin : init_clk_val
-        clk_if.CLK = 1'b0;
+        clk_if.clk = 1'b0;
     end
 
 always
     begin : clk_gen
         #(PERIOD/2)
-            clk_if.CLK = ~clk_if.CLK;
+            clk_if.clk = ~clk_if.clk;
     end
 
 // Reset sequences
 
 initial
     begin : init_rst_val
-        clk_if.ARST     = 1'b0;
-        clk_if.ARSTn    = 1'b1;
-        clk_if.SRST     = 1'b0;
-        clk_if.SRSTn    = 1'b1;
+        clk_if.arst     = 1'b0;
+        clk_if.arstn    = 1'b1;
+        clk_if.srst     = 1'b0;
+        clk_if.srstn    = 1'b1;
     end
 
 task arst_assert();
-    clk_if.ARST = 1'b1;
+    clk_if.arst = 1'b1;
 endtask
 
 task arst_deassert();
-    clk_if.ARST = 1'b0;
+    clk_if.arst = 1'b0;
 endtask
 
 task arstn_assert();
-    clk_if.ARSTn = 1'b0;
+    clk_if.arstn = 1'b0;
 endtask
 
 task arstn_deassert();
-    clk_if.ARSTn = 1'b1;
+    clk_if.arstn = 1'b1;
 endtask
 
 task srst_assert();
-    @( posedge clk_if.CLK )
-        clk_if.SRST = 1'b1;
+    @( posedge clk_if.clk )
+        clk_if.srst = 1'b1;
 endtask
 
 task srst_deassert();
-    @( posedge clk_if.CLK )
-        clk_if.SRST = 1'b0;
+    @( posedge clk_if.clk )
+        clk_if.srst = 1'b0;
 endtask
 
 task srstn_assert();
-    @( posedge clk_if.CLK )
-        clk_if.SRSTn = 1'b0;
+    @( posedge clk_if.clk )
+        clk_if.srstn = 1'b0;
 endtask
 
 task srstn_deassert();
-    @( posedge clk_if.CLK )
-        clk_if.SRSTn = 1'b1;
+    @( posedge clk_if.clk )
+        clk_if.srstn = 1'b1;
 endtask
 
 endmodule

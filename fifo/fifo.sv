@@ -39,17 +39,18 @@ logic [LOG2_DEPTH-1:0] pHead;
 logic [LOG2_DEPTH-1:0] pTail;
 logic [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
 
-always @ ( posedge clk_if.CLK or posedge clk_if.ARST )
+always @ ( posedge clk_if.clk or posedge clk_if.arst )
 begin
-    if ( arst )
+    if ( clk_if.arst )
         begin
             pHead                <= '0;
             pTail                <= '0;
             ff_ram               <= {DEPTH{'0}};
             fifo_out.almost_full <= '0;
             fifo_out.full        <= '0;
-            fifo_out.almost_mty  <= '0;
+            fifo_out.almost_mty  <= '1;
             fifo_out.mty         <= '1;
+            fifo_out.q           <= '1;
         end
     else
         begin
@@ -78,7 +79,7 @@ begin
                 end
             else
                 begin
-                    if ( rd )
+                    if ( fifo_in.rd )
                         begin
                             fifo_out.q  <= ff_ram[pTail];
                             pTail       <= pTail + 1'b1;

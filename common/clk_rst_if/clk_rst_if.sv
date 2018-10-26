@@ -21,29 +21,30 @@
 //SOFTWARE.
 //
 
-import router_pkg::*
-
-interface clk_rst();
-    logic CLK;
-    logic ARST;
-    logic ARSTn;
-    logic SRST;
-    logic SRSTn;
+interface clk_rst_if#(
+    )(
+    );
+    logic clk;
+    logic arst;
+    logic arstn;
+    logic srst;
+    logic srstn;
 
 modport source(
-    output CLK;
-    output ARST;
-    output ARSTn;
-    output SRST;
-    output SRSTn;
+    output clk,
+    output arst,
+    output arstn,
+    output srst,
+    output srstn
     );
 
 modport sink(
-    input CLK;
-    input ARST;
-    input ARSTn;
-    input SRST;
-    input SRSTn;
+    input clk,
+    input arst,
+    input arstn,
+    input srst,
+    input srstn
     );
 
 endinterface
+

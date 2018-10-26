@@ -21,16 +21,8 @@
 //SOFTWARE.
 //
 
-import uvm_pkg::*;
-`include "uvm_macros.svh"
-
-
 module ut_clk_rst_source();
 
-    initial
-    begin
-        `uvm_warning("Warning","Warning")
-    end
 
 endmodule
 
