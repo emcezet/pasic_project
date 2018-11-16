@@ -43,14 +43,14 @@ always @ ( posedge clk_if.clk or posedge clk_if.arst )
 begin
     if ( clk_if.arst )
         begin
-            pHead                <= '0;
+            pHead                <= {'0,1'b1};
             pTail                <= '0;
             ff_ram               <= {DEPTH{'0}};
-            fifo_out.almost_full <= '0;
-            fifo_out.full        <= '0;
-            fifo_out.almost_mty  <= '1;
-            fifo_out.mty         <= '1;
-            fifo_out.q           <= '1;
+//            fifo_out.almost_full <= '0;
+//            fifo_out.full        <= '0;
+//            fifo_out.almost_mty  <= '1;
+//            fifo_out.mty         <= '1;
+            fifo_out.q           <= '0;
         end
     else
         begin
@@ -74,30 +74,39 @@ begin
                 end
             if ( fifo_out.mty ) // Do not accept new reads!
                 begin
-                    ff_ram[pTail]   <= ff_ram[pTail];
+                    fifo_out.q      <= fifo_out.q;
                     pTail           <= pTail;
                 end
             else
                 begin
                     if ( fifo_in.rd )
                         begin
-                            fifo_out.q  <= ff_ram[pTail];
+                            fifo_out.q  <= ff_ram[pTail+1'b1];
                             pTail       <= pTail + 1'b1;
                         end
                     else
                         begin
-                            ff_ram[pTail]   <= ff_ram[pTail];
-                            pTail           <= pTail;
+                            fifo_out.q  <= fifo_out.q;
+                            pTail       <= pTail;
                         end
                 end
+            /*
             // Generate mty, almost_mty
             fifo_out.almost_mty <= ( pHead - pTail ) == ALMOST_MTY; //parameter cast to int!
             fifo_out.mty        <= ( pHead - pTail ) == 1'b1;
             // Generate full, almost_full
             fifo_out.almost_full <= ( pTail - pHead ) == ALMOST_FULL;
             fifo_out.full        <= ( pTail - pHead ) == 1'b1;
+            */
         end
 end
+// Generate mty, almost_mty
+assign fifo_out.almost_mty = ( pHead - pTail ) == ALMOST_MTY;
+assign fifo_out.mty        = (( pHead == '0 ) & ( pTail == '1 )) | (( pHead - pTail ) == 1'b1);
+// Generate full, almost_full
+assign fifo_out.almost_full = ( pTail - pHead ) == ALMOST_FULL;
+assign fifo_out.full        = (( pHead == '1 ) & ( pTail == '0 )) | (( pTail - pHead ) == 1'b1);
+
 
 endmodule
 

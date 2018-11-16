@@ -57,19 +57,22 @@ task send_data();
     // Timeout is set to a huge number by default
     fork : wait_or_timeout
         begin
-            #999_999
-                $error("Send data timed-out");
+            #3_000
+                $display("Send data timed-out");
                 disable wait_or_timeout;
         end
         begin
             wait ( fifo_reader.full == 1'b0 );
-                @( posedge clk_if.clk )
-                    begin
-                        fifo_driver.data <= out_q.pop_front();
-                        fifo_driver.wr <= '1;
-                    end
-                @( posedge clk_if.clk )
-                    fifo_driver.wr <= '0;
+            @( posedge clk_if.clk )
+                begin
+
+                    fifo_driver.data = out_q.pop_front();
+                    fifo_driver.wr = '1;
+                end
+            @( posedge clk_if.clk )
+                begin
+                    fifo_driver.wr = '0;
+                end
             disable wait_or_timeout;
         end
     join_any
@@ -78,6 +81,7 @@ endtask
 task read_data();
     // Read one data (one read operation)
     // Timeout is set to a huge number by default
+    logic [DATA_WIDTH-1:0] data;
     fork : wait_or_timeout
         begin
             #999_999
@@ -87,15 +91,63 @@ task read_data();
         begin
             wait ( fifo_reader.mty == 1'b0 );
                 @( posedge clk_if.clk )
-                    fifo_driver.rd <= '1;
+                    fifo_driver.rd = '1;
+/* Written like this gives a race issue!
+ * Synchronize read to negedge
+            @( posedge clk_if.clk )
+                    begin
+                        fifo_driver.rd = '0;
+                        in_q.push_front(fifo_reader.q);
+                    end
+*/
                 @( posedge clk_if.clk )
                     begin
-                        fifo_driver.rd <= '0;
-                        in_q.push_back(fifo_reader.q);
+                        fifo_driver.rd = '0;
+                    end
+                @( negedge clk_if.clk )
+                    begin
+                        in_q.push_front(fifo_reader.q);
                     end
             disable wait_or_timeout;
         end
     join_any
+endtask
+
+task read_data_infinite();
+    // Read data until timeout
+    // Timeout is set to a lower number by default
+    logic [DATA_WIDTH-1:0] data;
+    fork : wait_or_timeout
+        begin
+            #1_500
+                $display("Read data timed-out");
+                disable wait_or_timeout;
+        end
+        begin
+            forever
+                begin
+                    wait ( fifo_reader.mty == 1'b0 );
+                        @( posedge clk_if.clk )
+                            fifo_driver.rd = '1;
+/* Written like this gives a race issue!
+ * Synchronize read to negedge
+            @( posedge clk_if.clk )
+                    begin
+                        fifo_driver.rd = '0;
+                        in_q.push_front(fifo_reader.q);
+                    end
+*/
+                        @( posedge clk_if.clk )
+                            begin
+                                fifo_driver.rd = '0;
+                            end
+                        @( negedge clk_if.clk )
+                            begin
+                                in_q.push_front(fifo_reader.q);
+                            end
+                end
+        end
+    join
 endtask
 
 task dump();

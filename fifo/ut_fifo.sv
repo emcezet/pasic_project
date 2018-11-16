@@ -32,12 +32,13 @@ module ut_fifo#()(
 // FIFO parameters
 localparam DATA_W=128;
 localparam DEPTH=2**4;
-localparam MTY_TH=1;
-localparam FULL_TH=1;
+localparam MTY_TH=3;
+localparam FULL_TH=3;
 
 // Signals declarations
 clk_rst_if clk_test_if();
-fifo_if fifo_test_if(clk_test_if.sink);
+fifo_if #(.DATA_WIDTH (DATA_W)
+    ) fifo_test_if (clk_test_if.sink);
 
 // Generate clock
 clk_rst_source #(
@@ -60,6 +61,7 @@ fifo #(
     );
 
 fifo_tester #(
+    .DATA_WIDTH     (DATA_W)
     ) u_fifo_tester
     (
     .clk_if         (clk_test_if.sink),
@@ -84,7 +86,41 @@ initial
             ut_fifo.seq_reset(15,45);
             #(20)
             ut_fifo.seq_single_data_io();
-            $display("Finished test.");
+            $display("Finished single test.");
+            $display("*********************");
+            $display("Resetting again");
+            ut_fifo.seq_reset(15,45);
+            #(20)
+            fork
+                begin
+                    ut_fifo.seq_multiple_write(20);
+                end
+                begin
+                    u_fifo_tester.read_data_infinite();
+                end
+            join
+        u_fifo_tester.dump();
+            $display("*********************");
+            $display("Resetting again");
+            ut_fifo.seq_reset(15,45);
+            #(20)
+            ut_fifo.seq_multiple_write(8);
+            #(20)
+            fork
+                begin
+                    ut_fifo.seq_multiple_write(20);
+                end
+                begin
+                    u_fifo_tester.read_data_infinite();
+                end
+            join
+        u_fifo_tester.dump();
+            $display("*********************");
+            $display("Resetting again");
+            ut_fifo.seq_reset(15,45);
+            #(20)
+            ut_fifo.seq_multiple_write(20);
+        u_fifo_tester.dump();
         end
 
 task seq_reset(
@@ -117,6 +153,19 @@ task seq_single_data_io();
    u_fifo_tester.dump();
 endtask
 
+task seq_multiple_write(
+    input integer num_writes
+    );
+    integer i = 0;
+    integer rnd_delay = 10;
+    ut_fifo.seq_setup(num_writes);
+    for ( i=0 ; i < num_writes; i++ )
+        begin
+            rnd_delay = $urandom_range(100, 10);
+            #(rnd_delay)
+                u_fifo_tester.send_data();
+        end
+endtask
 
 endmodule
 
