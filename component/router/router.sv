@@ -37,8 +37,31 @@ module router #(
     axi_lite.slave ni_in
     );
 
-// Generate fifos and crossbar switch.
+fifo_if fifo_ingress[0:NUM_PORTS](clk_if.slave);
+fifo_if fifo_egress[0:NUM_PORTS](clk_if.slave);
 
+genvar port_index;
+generate
+    for ( port_index = 0 ; port_index < NUM_PORTS ; port_index++ )
+    begin
+        // AXI ingress -> FIFO input
+        always_comb
+            begin : proc_glue_input
+                fifo_ingress[port_index].data   = axi_ingress[port_index].tdata;
+                fifo_ingress[port_index].wr     = axi_ingress[port_index].tvalid & ~fifo_ingress[port_index].full;
+                axi_ingress[port_index].tready  = ~fifo_ingress[port_index].full;
+            end
+        // FIFO output -> AXI egress
+        always_comb
+            begin : proc_glue_output
+                axi_egress[port_index].tdata = fifo_egress[port_index].data;
+                axi_egress[port_index].tvalid = fifo_egress[port_index].rd; //Possibly add one cycle coz fifo latency
+                fifo_egress[port_index].rd = axi_egress[port_index].tready & ~fifo_egress[port_index].mty;
+            end
+    end
+endgenerate
+
+// Generate input FIFOs
 genvar fifo_index;
 generate
 for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
@@ -50,8 +73,8 @@ for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
         .ALMOST_FULL_TH (1)
         ) u_fifo_in (
         .clk_if     (clk_if.slave),
-        .fifo_in    (),
-        .fifo_out   ()
+        .fifo_in    (fifo_ingress[port_index].in),
+        .fifo_out   (fifo_ingress[port_index].out)
         );
     end
 
@@ -64,40 +87,11 @@ for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
         .ALMOST_FULL_TH (1)
         ) u_fifo_out (
         .clk_if         (clk_if.slave),
-        .fifo_in        (),
-        .fifo_out       ()
+        .fifo_in        (fifo_egress[port_index].in),
+        .fifo_out       (fifo_egress[port_index].out)
         );
     end
 endgenerate
-// Fifo to axi_st conversion is needed.
-// Basic scheme:
-
-always_comb
-    begin : translate_axi_to_fifo
-        if ( fifo_full )
-            begin
-                axi_ready = 0;
-            end
-        else
-            begin
-                axi_ready = 1;
-            end
-        if ( axi_ready & axi_data_valid )
-                write_to_fifo;
-    end
-
-always_comb
-    begin : translate_fifo_to_axi
-        if ( axi_ready & fifo_not_empty )
-            begin
-                read_from_fifo;
-                axi_valid;
-            end
-        if ( fifo_empty )
-            begin
-                axi_notvalid
-            end
-    end
 
 // Router FSM
 // Operation:
@@ -106,13 +100,61 @@ always_comb
 // 	returned to the input queue.
 // 	-> If input FIFO is empty, skip.
 // 	-> OPTIONAL : If corrupted message, drop.
-// 	->  
+// 	->
 // Inputs:
 // 	-> mty's and full's
-// 
-
-// NI
-
-
+//
+rout_msg_t rout_msg_ingress[0:NUM_PORTS];
+rout_msg_t rout_msg_egress[0:NUM_PORTS];
+logic [LOG2_CEIL_NUM_PORTS] polled_q;
+logic 
+typedef enum {IDLE, POLL, DECODE, SEND} router_state;
+router_state r_state;
+genvar port_index;
+generate
+    for ( port_index = 0 ; port_index < NUM_PORTS ; port_index++ )
+    begin
+        always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
+            begin : proc_router_fsm
+                if ( arst )
+                    begin
+                        r_state <= IDLE;
+                    end
+                else
+                    begin
+                        case ( r_state )
+                            IDLE:
+                                begin
+                                    polled_q <= '0;
+                                    rout_msg_ingress[port_index] <= '0;
+                                    rout_msg_egress[port_index] <= '0;
+                                end
+                            POLL:
+                                begin
+                                    if ( fifo_ingress[port_index].mty )
+                                        begin
+                                            polled_q <= polled_q + 1'b1;
+                                        end
+                                    else
+                                        begin
+                                            polled
+                                        end
+                                end
+                            DECODE:
+                                begin
+                                    
+                                end
+                            SEND:
+                                begin
+                                    
+                                end
+                            default:
+                                begin
+                                    
+                                end
+                        endcase
+                    end
+            end
+    end
 endmodule
 
