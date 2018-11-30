@@ -21,7 +21,7 @@
 //SOFTWARE.
 //
 
-module fifo#(
+module fifo #(
     parameter DATA_WIDTH=128,
     parameter DEPTH=8,
     parameter ALMOST_MTY=1,
@@ -39,13 +39,13 @@ logic [LOG2_DEPTH-1:0] pHead;
 logic [LOG2_DEPTH-1:0] pTail;
 logic [DATA_WIDTH-1:0] ff_ram [0:DEPTH-1];
 
-always @ ( posedge clk_if.clk or posedge clk_if.arst )
+always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
 begin
     if ( clk_if.arst )
         begin
             pHead                <= {'0,1'b1};
             pTail                <= '0;
-            ff_ram               <= {DEPTH{'0}};
+            ff_ram               <= {DEPTH{1'b0}};
 //            fifo_out.almost_full <= '0;
 //            fifo_out.full        <= '0;
 //            fifo_out.almost_mty  <= '1;

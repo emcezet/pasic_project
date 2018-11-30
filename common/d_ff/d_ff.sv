@@ -27,12 +27,12 @@ module d_ff(
     output logic q
     );
 
-always @ ( posedge clk or posedge rst )
+always_ff @ ( posedge clk or posedge rst )
     begin : proc_flip_flop
         if ( rst )
             q <= '0;
         else
-            d <= q;
+            q <= d;
     end
 
 endmodule
