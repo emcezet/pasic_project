@@ -22,17 +22,25 @@
 //
 
 
-`include "defines.svh"
-
 package router_pkg;
+    parameter SYMBOL_W= 8;
+    parameter SYMBOL_NUM= 8;
+    parameter DATA_W= 8;
+    parameter TID_W= 8;
+    parameter TDEST_W= 8;
+    parameter TUSER_W= 8;
+    parameter NUM_PORTS= 4;
+    parameter PORT_WIDTH= 128;
+    parameter FIFO_DEPTH =16;
+    parameter LOCAL_ADR= 0;
 
 typedef struct packed{
-    logic [4-1:0] src_x,
-    logic [4-1:0] src_y,
-    logic [4-1:0] dst_x,
-    logic [4-1:0] dst_y,
-    logic [8-1:0] mtype,
-    logic [(`ROUTER_BUS_W-24-1):0] data
+    logic [4-1:0] src_x;
+    logic [4-1:0] src_y;
+    logic [4-1:0] dst_x;
+    logic [4-1:0] dst_y;
+    logic [8-1:0] mtype;
+    logic [(PORT_WIDTH-24-1):0] data;
 } rout_msg_t;
 
 typedef struct packed{

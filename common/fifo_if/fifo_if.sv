@@ -22,7 +22,7 @@
 //
 
 interface fifo_if #(
-    parameter DATA_WIDTH = 8 //`AXI_ST_DATA_W
+    parameter DATA_WIDTH = 128 //`AXI_ST_DATA_W
     )(
     clk_rst_if.sink clk_rst_if
     );

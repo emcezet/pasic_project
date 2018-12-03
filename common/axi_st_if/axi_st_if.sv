@@ -30,7 +30,7 @@
 interface axi_st_if #(
     parameter SYMBOL_W      = 8, //`AXI_ST_SYMBOL_W,
     parameter SYMBOL_NUM    = 8, //`AXI_ST_SYMBOL_NUM,
-    parameter DATA_W        = 8, //`AXI_ST_DATA_W,
+    parameter DATA_W        = 128, //`AXI_ST_DATA_W,
     parameter TID_W         = 8, //`AXI_ST_TID_W, // Recommended max.
     parameter TDEST_W       = 8, //`AXI_ST_TDEST_W, // Recommended max.
     parameter TUSER_W       = 8 //`AXI_ST_TUSER_W // Smaller than recommended.

@@ -41,71 +41,65 @@ interface axi_lite_if #(
     logic                   awready;
     logic                   awaddr;
     logic                   awprot;
-
     logic                   wvalid;
     logic                   wready;
     logic                   wdata;
     logic                   wstrb;
-
     logic                   bvalid;
     logic                   bready;
     logic                   bresp;
-
     logic                   arvalid;
     logic                   arready;
     logic                   araddr;
     logic                   arprot;
-
     logic                   rvalid;
     logic                   rready;
     logic                   rdata;
     logic                   rresp;
 
 modport master(
-    logic awvalid;
-    logic awready;
-    logic awaddr;
-    logic awprot;
-    logic wvalid;
-    logic wready;
-    logic wdata;
-    logic wstrb;
-    logic bvalid;
-    logic bready;
-    logic bresp;
-    logic arvalid;
-    logic arready;
-    logic araddr;
-    logic arprot;
-    logic rvalid;
-    logic rready;
-    logic rdata;
-    logic rresp;
-
-    );
+    output awvalid,
+    output awready,
+    output awaddr,
+    output awprot,
+    output wvalid,
+    output wready,
+    output wdata,
+    output wstrb,
+    output bvalid,
+    output bready,
+    output bresp,
+    output arvalid,
+    output arready,
+    output araddr,
+    output arprot,
+    output rvalid,
+    output rready,
+    output rdata,
+    output rresp
+);
 
 modport slave(
-    logic awvalid;
-    logic awready;
-    logic awaddr;
-    logic awprot;
-    logic wvalid;
-    logic wready;
-    logic wdata;
-    logic wstrb;
-    logic bvalid;
-    logic bready;
-    logic bresp;
-    logic arvalid;
-    logic arready;
-    logic araddr;
-    logic arprot;
-    logic rvalid;
-    logic rready;
-    logic rdata;
-    logic rresp;
-
-    );
+    input awvalid,
+    input awready,
+    input awaddr,
+    input awprot,
+    input wvalid,
+    input wready,
+    input wdata,
+    input wstrb,
+    input bvalid,
+    input bready,
+    input bresp,
+    input arvalid,
+    input arready,
+    input araddr,
+    input arprot,
+    input rvalid,
+    input rready,
+    input rdata,
+    input rresp
+);
 
 endinterface
 

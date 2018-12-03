@@ -37,18 +37,18 @@ module router #(
     (
     clk_rst_if.sink clk_if,
     // To/from other routers
-    axi_st.master axi_egress[0:NUM_PORTS],
-    axi_st.slave axi_ingress[0:NUM_PORTS],
+    axi_st_if.master axi_egress[0:NUM_PORTS],
+    axi_st_if.slave axi_ingress[0:NUM_PORTS],
     // To/from Network Inteface (Processing Element)
-    axi_lite.master ni_out,
-    axi_lite.slave ni_in
+    axi_lite_if.master ni_out,
+    axi_lite_if.slave ni_in
     );
 
-localparam LOCAL_ADR_X = LOCAL_ADR / SIZE_Y;
-localparam LOCAL_ADR_Y = LOCAL_ADR % SIZE_X;
+localparam LOCAL_ADR_X = LOCAL_ADR / 4;
+localparam LOCAL_ADR_Y = LOCAL_ADR % 4;
 
-fifo_if fifo_ingress[0:NUM_PORTS](clk_if.slave);
-fifo_if fifo_egress[0:NUM_PORTS](clk_if.slave);
+fifo_if fifo_ingress[0:NUM_PORTS](clk_if.sink);
+fifo_if fifo_egress[0:NUM_PORTS](clk_if.sink);
 
 genvar port_index;
 generate
@@ -79,12 +79,12 @@ for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
         fifo #(
         .DATA_WIDTH     (PORT_WIDTH),
         .DEPTH          (FIFO_DEPTH),
-        .ALMOST_MTY_TH  (1),
-        .ALMOST_FULL_TH (1)
+        .ALMOST_MTY     (1),
+        .ALMOST_FULL    (1)
         ) u_fifo_in (
-        .clk_if     (clk_if.slave),
-        .fifo_in    (fifo_ingress[port_index].in),
-        .fifo_out   (fifo_ingress[port_index].out)
+        .clk_if     (clk_if.sink),
+        .fifo_in    (fifo_ingress[fifo_index].in),
+        .fifo_out   (fifo_ingress[fifo_index].out)
         );
     end
 
@@ -93,12 +93,12 @@ for ( fifo_index = 0 ; fifo_index < NUM_PORTS ; fifo_index++ )
         fifo #(
         .DATA_WIDTH     (PORT_WIDTH),
         .DEPTH          (FIFO_DEPTH),
-        .ALMOST_MTY_TH  (1),
-        .ALMOST_FULL_TH (1)
+        .ALMOST_MTY     (1),
+        .ALMOST_FULL    (1)
         ) u_fifo_out (
-        .clk_if         (clk_if.slave),
-        .fifo_in        (fifo_egress[port_index].in),
-        .fifo_out       (fifo_egress[port_index].out)
+        .clk_if         (clk_if.sink),
+        .fifo_in        (fifo_egress[fifo_index].in),
+        .fifo_out       (fifo_egress[fifo_index].out)
         );
     end
 endgenerate
@@ -114,30 +114,16 @@ endgenerate
 // Inputs:
 // 	-> mty's and full's
 //
-rout_msg_t message;
-logic [3:0] adr_polled_q;
-logic [3:0] adr_out_q;
-logic [3:0] adr_local;
+router_pkg::rout_msg_t message;
+logic [2:0] adr_out_q;
+logic [2:0] adr_in_q;
 
-typedef enum {IDLE, POLL, DECODE, SEND} router_state;
+typedef enum {IDLE, POLL, POLL_Q, DECODE, DECODE_Q, SEND} router_state;
 router_state r_state;
-
-always_ff @ (posedge clk_if.clk or posedge clk_if.arst)
-    begin
-        if ( arst )
-            begin
-                adr_local <= '0;
-            end
-        else
-            begin
-                adr_local <= LOCAL_ADDRESS;
-            end
-
-    end
 
 always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
     begin : proc_router_fsm
-        if ( arst )
+        if ( clk_if.arst )
             begin
                 r_state <= IDLE;
             end
@@ -147,8 +133,8 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                     IDLE:
                         begin
                             // Outputs
-                            adr_polled_q <= '0;
                             adr_out_q <= '0;
+                            adr_in_q <= '0;
                             message <= '0;
                             // Next state
                             r_state <= POLL;
@@ -156,36 +142,108 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                     POLL:
                         begin
                             // Outputs
-                            if ( adr_polled_q == 3'h05 )
+                            if ( ~fifo_ingress[0].mty )
                                 begin
-                                    adr_polled_q <= '0;
+                                    fifo_ingress[0].rd <= 1'b1;
+                                    adr_in_q <= 4'h0;
+                                    r_state <= POLL_Q;
+                                end
+                            else if ( ~fifo_ingress[1].mty )
+                                    begin
+                                    fifo_ingress[1].rd <= 1'b1;
+                                    r_state <= POLL_Q;
+                                    adr_in_q <= 4'h1;
+                                end
+                            else if ( ~fifo_ingress[2].mty )
+                                    begin
+                                    fifo_ingress[2].rd <= 1'b1;
+                                    r_state <= POLL_Q;
+                                    adr_in_q <= 4'h2;
+                                end
+                            else if ( ~fifo_ingress[3].mty )
+                                    begin
+                                    fifo_ingress[3].rd <= 1'b1;
+                                    r_state <= POLL_Q;
+                                    adr_in_q <= 4'h3;
+                                end
+                            else if ( ~fifo_ingress[4].mty )
+                                    begin
+                                    fifo_ingress[4].rd <= 1'b1;
+                                    r_state <= POLL_Q;
+                                    adr_in_q <= 4'h4;
                                 end
                             else
                                 begin
-                                    adr_polled_q <= adr_polled_q + 1'b1;
-                                end
-                            if ( ~fifo_ingress[adr_polled_q].mty )
-                                begin
-                                    message <= fifo_ingress[adr_polled_q].q;
-                                    fifo_ingress[adr_polled_q].rd <= 1'b1;
-                                end
-                            else
-                                begin
-                                    message <='0;
-                                    fifo_ingress[adr_polled_q].rd <= 1'b0;
-                                end
-                            // Next state
-                            if ( fifo_ingress[adr_polled_q].mty )
-                                begin
+                                    message <= message;
+                                    fifo_ingress[0].rd <= '0;
+                                    fifo_ingress[1].rd <= '0;
+                                    fifo_ingress[2].rd <= '0;
+                                    fifo_ingress[3].rd <= '0;
+                                    fifo_ingress[4].rd <= '0;
                                     r_state <= POLL;
                                 end
+                        end
+                    POLL_Q:
+                        begin
+                            // Outputs
+                            if ( adr_in_q == 4'h0 )
+                                begin
+                                    message <= fifo_ingress[0].q;
+                                end
+                            else if ( adr_in_q == 4'h1)
+                                    begin
+                                    message <= fifo_ingress[1].q;
+                                end
+                            else if ( adr_in_q == 4'h2)
+                                    begin
+                                    message <= fifo_ingress[2].q;
+                                end
+                            else if ( adr_in_q == 4'h3)
+                                    begin
+                                    message <= fifo_ingress[3].q;
+                                end
+                            else if ( adr_in_q == 4'h4)
+                                    begin
+                                    message <= fifo_ingress[4].q;
+                                end
                             else
                                 begin
-                                    r_state <= DECODE;
+                                    message <= message;
                                 end
+                            r_state <= DECODE;
+                            fifo_ingress[0].rd <= '0;
+                            fifo_ingress[1].rd <= '0;
+                            fifo_ingress[2].rd <= '0;
+                            fifo_ingress[3].rd <= '0;
+                            fifo_ingress[4].rd <= '0;
                         end
+
                     DECODE:
                         begin
+                             if ( adr_in_q == 4'h0 )
+                                begin
+                                    message <= fifo_ingress[0].q;
+                                end
+                            else if ( adr_in_q == 4'h1)
+                                    begin
+                                    message <= fifo_ingress[1].q;
+                                end
+                            else if ( adr_in_q == 4'h2)
+                                    begin
+                                    message <= fifo_ingress[2].q;
+                                end
+                            else if ( adr_in_q == 4'h3)
+                                    begin
+                                    message <= fifo_ingress[3].q;
+                                end
+                            else if ( adr_in_q == 4'h4)
+                                    begin
+                                    message <= fifo_ingress[4].q;
+                                end
+                            else
+                                begin
+                                    message <= message;
+                                end
                             // Decoding scheme
                             if ( message.dst_y == LOCAL_ADR_Y )
                                 begin
@@ -202,29 +260,125 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                                             adr_out_q <= `WEST;
                                         end
                                 end
-                            else if ( message.dst_y > local_adr_y )
+                            else if ( message.dst_y > LOCAL_ADR_Y )
                                 begin
                                     adr_out_q <= `SOUTH;
                                 end
                             else
                                 begin
-                                    adr_out_q <= `NORTH:
+                                    adr_out_q <= `NORTH;
                                 end
                             // Next state
-                            if ( fifo_egress[adr_out_q].full )
-                                begin
-                                    r_state <= DECODE;
-                                end
-                            else
-                                begin
-                                    r_state <= SEND;
-                                end
+                        end
+                        DECODE_Q:
+                        begin
+                            case ( adr_out_q )
+                                    `CENTRAL:
+                                        begin
+                                            if ( fifo_egress[`CENTRAL].full )
+                                                begin
+                                                    r_state <= DECODE_Q;
+                                            end
+                                            else
+                                                begin
+                                                    r_state <= SEND;
+                                            end
+                                        end
+                                    `SOUTH:
+                                        begin
+                                            if ( fifo_egress[`SOUTH].full )
+                                                begin
+                                                    r_state <= DECODE_Q;
+                                            end
+                                            else
+                                                begin
+                                                    r_state <= SEND;
+                                            end
+                                        end
+                                    `WEST:
+                                        begin
+                                            if ( fifo_egress[`WEST].full )
+                                                begin
+                                                    r_state <= DECODE_Q;
+                                            end
+                                            else
+                                                begin
+                                                    r_state <= SEND;
+                                            end
+                                        end
+                                    `EAST:
+                                        begin
+                                            if ( fifo_egress[`EAST].full )
+                                                begin
+                                                    r_state <= DECODE_Q;
+                                            end
+                                            else
+                                                begin
+                                                    r_state <= SEND;
+                                            end
+                                        end
+                                    `NORTH:
+                                        begin
+                                            if ( fifo_egress[`NORTH].full )
+                                                begin
+                                                    r_state <= DECODE_Q;
+                                            end
+                                            else
+                                                begin
+                                                    r_state <= SEND;
+                                            end
+                                        end
+                                default:
+                                    begin
+                                        r_state <= IDLE;
+                                    end
+                            endcase
+
                         end
                     SEND:
                         begin
-                            fifo_egress[adr_out_q].wr <= '1;
-                            fifo_egress[adr_out_q].data <= message;
-                            // Next state
+                            message <= message;
+                            case ( adr_out_q )
+                                    `CENTRAL:
+                                        begin
+                                            fifo_egress[`CENTRAL].wr <= '1;
+                                            fifo_egress[`CENTRAL].data <= message;
+                                        end
+                                    `SOUTH:
+                                        begin
+                                            fifo_egress[`SOUTH].wr <= '1;
+                                            fifo_egress[`SOUTH].data <= message;
+                                        end
+                                    `WEST:
+                                        begin
+                                            fifo_egress[`WEST].wr <= '1;
+                                            fifo_egress[`WEST].data <= message;
+                                        end
+                                    `EAST:
+                                        begin
+                                            fifo_egress[`EAST].wr <= '1;
+                                            fifo_egress[`EAST].data <= message;
+                                        end
+                                    `NORTH:
+                                        begin
+                                            fifo_egress[`NORTH].wr <= '1;
+                                            fifo_egress[`NORTH].data <= message;
+                                        end
+                                default:
+                                    begin
+                                        fifo_egress[`CENTRAL].wr <= '0;
+                                        fifo_egress[`CENTRAL].data <= '0;
+                                        fifo_egress[`SOUTH].wr <= '0;
+                                        fifo_egress[`SOUTH].data <= '0;
+                                        fifo_egress[`WEST].wr <= '0;
+                                        fifo_egress[`WEST].data <= '0;
+                                        fifo_egress[`EAST].wr <= '0;
+                                        fifo_egress[`EAST].data <= '0;
+                                        fifo_egress[`NORTH].wr <= '0;
+                                        fifo_egress[`NORTH].data <= '0;
+                                    end
+                            endcase
+                        // Next state
                             r_state <= POLL;
                         end
                     default:
@@ -232,7 +386,7 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                             r_state <= IDLE;
                         end
                 endcase
-
+            end
     end
 
 endmodule

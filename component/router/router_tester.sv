@@ -21,38 +21,61 @@
 //SOFTWARE.
 //
 
+import router_pkg::*;
+
+// Test on one interface only
 module router_tester#(
-    parameter DATA_WIDTH = 8
+    parameter NUM_PORTS = 4,
+    parameter PORT_WIDTH = 128,
+    parameter FIFO_DEPTH = 16,
+    parameter LOCAL_ADR = 0
     )
     (
     clk_rst_if.sink clk_if,
-    fifo_if.driver fifo_driver,
-    fifo_if.reader fifo_reader
+    axi_st_if.master stimulus[0:NUM_PORTS],
+    axi_st_if.slave response[0:NUM_PORTS],
+    // To/from Network Inteface (Processing Element)
+    axi_lite_if.master ni_master_unconn,
+    axi_lite_if.slave ni_slave_unconn
     );
 
-logic [DATA_WIDTH-1:0] out_q[$];
-logic [DATA_WIDTH-1:0] in_q[$];
+logic [PORT_WIDTH-1:0] stimulus_q[$];
+logic [PORT_WIDTH-1:0] response_q[$];
 
 task idle();
-    fifo_driver.wr = '0;
-    fifo_driver.data = '0;
-    fifo_driver.rd = '0;
+    begin
+        stimulus[0].tvalid = '0;
+        stimulus[0].tdata = '0;
+        stimulus[1].tvalid = '0;
+        stimulus[1].tdata = '0;
+        stimulus[2].tvalid = '0;
+        stimulus[2].tdata = '0;
+        stimulus[3].tvalid = '0;
+        stimulus[3].tdata = '0;
+        stimulus[4].tvalid = '0;
+        stimulus[4].tdata = '0;
+    end
 endtask
 
-task generate_new_data(
-    input integer number
+task build_messages(
+    input integer number,
+    input logic [3:0] dst_x,
+    input logic [3:0] dst_y
     );
     integer index;
     integer result;
-    logic [DATA_WIDTH-1:0] data;
+    rout_msg_t message;
     for ( index = 0 ; index < number ; index++ )
         begin
-            result = randomize(data);
-            out_q.push_back(data);
+            result = randomize(message);
+            message.dst_x = dst_x;
+            message.dst_y = dst_y;
+            stimulus_q.push_back(message);
         end
 endtask
 
-task send_data();
+task send_data(
+    );
     // Send one data (one write operation)
     // Timeout is set to a huge number by default
     fork : wait_or_timeout
@@ -62,61 +85,27 @@ task send_data();
                 disable wait_or_timeout;
         end
         begin
-            wait ( fifo_reader.full == 1'b0 );
+            wait ( stimulus[1].tready== 1'b1 );
             @( posedge clk_if.clk )
                 begin
-
-                    fifo_driver.data = out_q.pop_front();
-                    fifo_driver.wr = '1;
+                    stimulus[1].tdata= stimulus_q.pop_front();
+                    stimulus[1].tvalid = '1;
                 end
             @( posedge clk_if.clk )
                 begin
-                    fifo_driver.wr = '0;
+                    stimulus[1].tdata = '0;
+                    stimulus[1].tvalid = '0;
                 end
             disable wait_or_timeout;
         end
     join_any
 endtask
 
-task read_data();
-    // Read one data (one read operation)
-    // Timeout is set to a huge number by default
-    logic [DATA_WIDTH-1:0] data;
-    fork : wait_or_timeout
-        begin
-            #999_999
-                $error("Read data timed-out");
-                disable wait_or_timeout;
-        end
-        begin
-            wait ( fifo_reader.mty == 1'b0 );
-                @( posedge clk_if.clk )
-                    fifo_driver.rd = '1;
-/* Written like this gives a race issue!
- * Synchronize read to negedge
-            @( posedge clk_if.clk )
-                    begin
-                        fifo_driver.rd = '0;
-                        in_q.push_front(fifo_reader.q);
-                    end
-*/
-                @( posedge clk_if.clk )
-                    begin
-                        fifo_driver.rd = '0;
-                    end
-                @( negedge clk_if.clk )
-                    begin
-                        in_q.push_front(fifo_reader.q);
-                    end
-            disable wait_or_timeout;
-        end
-    join_any
-endtask
-
-task read_data_infinite();
+task read_data_infinite(
+    );
     // Read data until timeout
     // Timeout is set to a lower number by default
-    logic [DATA_WIDTH-1:0] data;
+    logic [PORT_WIDTH-1:0] data;
     fork : wait_or_timeout
         begin
             #1_500
@@ -126,31 +115,19 @@ task read_data_infinite();
         begin
             forever
                 begin
-                    wait ( fifo_reader.mty == 1'b0 );
-                        @( posedge clk_if.clk )
-                            fifo_driver.rd = '1;
-/* Written like this gives a race issue!
- * Synchronize read to negedge
-            @( posedge clk_if.clk )
-                    begin
-                        fifo_driver.rd = '0;
-                        in_q.push_front(fifo_reader.q);
-                    end
-*/
-                        @( posedge clk_if.clk )
-                            begin
-                                fifo_driver.rd = '0;
-                            end
-                        @( negedge clk_if.clk )
-                            begin
-                                in_q.push_front(fifo_reader.q);
-                            end
+                    @( posedge clk_if.clk )
+                        response[2].tready = '1;
+                    wait ( response[2].tvalid == '1);
+                    @( posedge clk_if.clk )
+                        begin
+                            response_q.push_front(response[2].tdata);
+                        end
                 end
         end
     join
 endtask
 
-task dump();
+/*task dump();
     integer index;
     $display("Fifo tester - dump of queue");
     for ( index = 0 ; index < out_q.size() ; index++ )
@@ -162,6 +139,6 @@ task dump();
             $display("\t in_q[%d] =\t [%h]",index,in_q[index]);
         end
 endtask
-
+*/
 endmodule
 
