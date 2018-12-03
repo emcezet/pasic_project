@@ -66,7 +66,7 @@ generate
             begin : proc_glue_output
                 axi_egress[port_index].tdata = fifo_egress[port_index].data;
                 axi_egress[port_index].tvalid = fifo_egress[port_index].rd; //Possibly add one cycle coz fifo latency
-                fifo_egress[port_index].rd = axi_egress[port_index].tready & ~fifo_egress[port_index].mty;
+                fifo_egress[port_index].rd = axi_ingress[port_index].tready & ~fifo_egress[port_index].mty;
             end
     end
 endgenerate
@@ -118,7 +118,7 @@ router_pkg::rout_msg_t message;
 logic [2:0] adr_out_q;
 logic [2:0] adr_in_q;
 
-typedef enum {IDLE, POLL, POLL_Q, DECODE, DECODE_Q, SEND} router_state;
+typedef enum {IDLE, POLL, POLL_Q, POLL_QQ, DECODE, DECODE_Q, DECODE_QQ, SEND} router_state;
 router_state r_state;
 
 always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
@@ -138,6 +138,16 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                             message <= '0;
                             // Next state
                             r_state <= POLL;
+                            fifo_egress[`CENTRAL].wr <= '0;
+                            fifo_egress[`CENTRAL].data <= '0;
+                            fifo_egress[`SOUTH].wr <= '0;
+                            fifo_egress[`SOUTH].data <= '0;
+                            fifo_egress[`WEST].wr <= '0;
+                            fifo_egress[`WEST].data <= '0;
+                            fifo_egress[`EAST].wr <= '0;
+                            fifo_egress[`EAST].data <= '0;
+                            fifo_egress[`NORTH].wr <= '0;
+                            fifo_egress[`NORTH].data <= '0;
                         end
                     POLL:
                         begin
@@ -145,8 +155,8 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                             if ( ~fifo_ingress[0].mty )
                                 begin
                                     fifo_ingress[0].rd <= 1'b1;
-                                    adr_in_q <= 4'h0;
                                     r_state <= POLL_Q;
+                                    adr_in_q <= 4'h0;
                                 end
                             else if ( ~fifo_ingress[1].mty )
                                     begin
@@ -185,31 +195,7 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                         end
                     POLL_Q:
                         begin
-                            // Outputs
-                            if ( adr_in_q == 4'h0 )
-                                begin
-                                    message <= fifo_ingress[0].q;
-                                end
-                            else if ( adr_in_q == 4'h1)
-                                    begin
-                                    message <= fifo_ingress[1].q;
-                                end
-                            else if ( adr_in_q == 4'h2)
-                                    begin
-                                    message <= fifo_ingress[2].q;
-                                end
-                            else if ( adr_in_q == 4'h3)
-                                    begin
-                                    message <= fifo_ingress[3].q;
-                                end
-                            else if ( adr_in_q == 4'h4)
-                                    begin
-                                    message <= fifo_ingress[4].q;
-                                end
-                            else
-                                begin
-                                    message <= message;
-                                end
+                           // Outputs
                             r_state <= DECODE;
                             fifo_ingress[0].rd <= '0;
                             fifo_ingress[1].rd <= '0;
@@ -217,7 +203,6 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                             fifo_ingress[3].rd <= '0;
                             fifo_ingress[4].rd <= '0;
                         end
-
                     DECODE:
                         begin
                              if ( adr_in_q == 4'h0 )
@@ -225,19 +210,19 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                                     message <= fifo_ingress[0].q;
                                 end
                             else if ( adr_in_q == 4'h1)
-                                    begin
+                                begin
                                     message <= fifo_ingress[1].q;
                                 end
                             else if ( adr_in_q == 4'h2)
-                                    begin
+                                begin
                                     message <= fifo_ingress[2].q;
                                 end
                             else if ( adr_in_q == 4'h3)
-                                    begin
+                                begin
                                     message <= fifo_ingress[3].q;
                                 end
                             else if ( adr_in_q == 4'h4)
-                                    begin
+                                begin
                                     message <= fifo_ingress[4].q;
                                 end
                             else
@@ -245,6 +230,11 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                                     message <= message;
                                 end
                             // Decoding scheme
+                            // Next state
+                            r_state <= DECODE_Q;
+                        end
+                        DECODE_Q:
+                        begin
                             if ( message.dst_y == LOCAL_ADR_Y )
                                 begin
                                     if ( message.dst_x == LOCAL_ADR_X )
@@ -268,10 +258,7 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                                 begin
                                     adr_out_q <= `NORTH;
                                 end
-                            // Next state
-                        end
-                        DECODE_Q:
-                        begin
+
                             case ( adr_out_q )
                                     `CENTRAL:
                                         begin
@@ -379,7 +366,7 @@ always_ff @ ( posedge clk_if.clk or posedge clk_if.arst )
                                     end
                             endcase
                         // Next state
-                            r_state <= POLL;
+                            r_state <= IDLE;
                         end
                     default:
                         begin

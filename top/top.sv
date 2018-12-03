@@ -52,9 +52,6 @@ module top#(
         for ( router_index = 0 ; router_index < SIZE_X*SIZE_Y ; router_index++ )
             begin : gen_mesh
                 router #(
-                    .NUM_PORTS  (),
-                    .PORT_WIDTH (),
-                    .FIFO_DEPTH ()
                     ) u_router (
                     .clk_if         (clk_if.slave),
                     .axi_egress     (),
